@@ -1,251 +1,74 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prompt Post | Admin Dashboard</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    /* Password Gate Styles */
-    #password-gate {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      padding: 20px;
-    }
-    .password-card {
-      background: #FFFFFF;
-      border-radius: 20px;
-      padding: 36px 30px;
-      max-width: 420px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-    }
-    .password-badge {
-      width: 56px; height: 56px;
-      background: #FFF0ED;
-      color: var(--primary-red);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px;
-      margin: 0 auto 16px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Prompt Post</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- PASSWORD PROTECTION GATE (Password: 0637941837) -->
-  <div id="password-gate">
-    <div class="password-card">
-      <div class="password-badge">🔒</div>
-      <h2 style="font-size: 20px; color: var(--deep-navy); margin-bottom: 8px;">ระบบจัดการข้อมูลผลสำรวจ</h2>
-      <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px;">
-        กรุณากรอกรหัสผ่านเพื่อเข้าสู่ Admin Analytics Dashboard (Prompt Post J-MAT 35)
-      </p>
-      
-      <form onsubmit="handlePasswordSubmit(event)">
-        <input type="password" id="admin-pass-input" class="modal-input" placeholder="กรอกรหัสผ่าน 10 หลัก..." style="text-align: center; font-size: 16px; letter-spacing: 2px;" required autofocus>
-        <div id="pass-error" style="color: #EF4444; font-size: 13px; margin-top: -10px; margin-bottom: 14px; display: none;">
-          รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง
+    <div class="container" style="max-width: 1000px;">
+        <h2 style="color: var(--primary-blue);">Admin Dashboard</h2>
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <p>จำนวนผู้ตอบแบบสอบถามทั้งหมด: <span id="totalCount" style="font-weight: bold; color: var(--primary-red);">0</span> คน</p>
+            <div>
+                <button class="btn-secondary" onclick="window.location.href='index.html'">กลับไปหน้าแรก</button>
+                <button class="btn-red" onclick="clearData()">🗑️ ลบข้อมูลทั้งหมด</button>
+            </div>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">
-          เข้าสู่ระบบ &rarr;
-        </button>
-      </form>
-      <div style="margin-top: 16px;">
-        <a href="index.html" style="font-size: 13px; color: var(--text-muted); text-decoration: none;">&larr; กลับหน้าแบบสอบถาม</a>
-      </div>
-    </div>
-  </div>
 
-  <!-- MAIN ADMIN DASHBOARD CONTENT -->
-  <div class="admin-container" id="admin-content" style="display: none;">
-    
-    <!-- Header -->
-    <header class="admin-header">
-      <div>
-        <div class="brand-logo-wrap" style="margin-bottom: 6px;">
-          <div class="logo-badge" style="width: 36px; height: 36px; font-size: 18px;">P</div>
-          <h1 style="font-size: 22px; color: var(--deep-navy);">Prompt Post &bull; Admin Dashboard</h1>
+        <div style="overflow-x: auto;">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>วัน-เวลา</th>
+                        <th>อายุ</th>
+                        <th>สถานภาพ</th>
+                        <th>รูปแบบที่พัก</th>
+                        <th>Feedback</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- ข้อมูลจะถูกเติมด้วย Javascript -->
+                </tbody>
+            </table>
         </div>
-        <p style="font-size: 13.5px; color: var(--text-muted);">
-          ข้อมูลจริงจาก Google Sheets (9 ส่วนคำถาม) &bull; อัปเดตล่าสุด: <span id="last-update">-</span>
-        </p>
-      </div>
-
-      <div class="admin-actions">
-        <a href="index.html" class="btn btn-secondary" style="padding: 10px 16px; font-size: 13.5px;" target="_blank">
-          <span>&larr; เปิดหน้าแบบสอบถาม</span>
-        </a>
-        <button class="btn btn-outline" style="padding: 10px 16px; font-size: 13.5px;" onclick="openWebhookModal()">
-          ⚙️ ตั้งค่า Google Sheets
-        </button>
-        <button class="btn btn-primary" style="padding: 10px 16px; font-size: 13.5px;" onclick="exportToCSV()">
-          📥 Export CSV (Excel)
-        </button>
-        <button class="btn btn-secondary" style="padding: 10px 14px; font-size: 13px;" onclick="logoutAdmin()">
-          🔒 ล็อกเอาท์
-        </button>
-      </div>
-    </header>
-
-    <!-- KPI Metrics Cards -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-header">
-          <span class="kpi-title">ผู้ตอบแบบสอบถามทั้งหมด</span>
-          <span class="kpi-icon">👥</span>
-        </div>
-        <div class="kpi-value" id="kpi-total">0</div>
-        <div class="kpi-sub">ผ่านเกณฑ์ Screening 21–25 ปี</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-header">
-          <span class="kpi-title">ต้องการทั้ง 2 ฟีเจอร์หลัก</span>
-          <span class="kpi-icon">⭐</span>
-        </div>
-        <div class="kpi-value" id="kpi-both-features" style="color: var(--primary-red);">0%</div>
-        <div class="kpi-sub">Digital Postbox + VC Prompt Pass</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-header">
-          <span class="kpi-title">ช่วยแก้ปัญหาชีวิตได้มากที่สุด</span>
-          <span class="kpi-icon">🎯</span>
-        </div>
-        <div class="kpi-value" id="kpi-value-relief" style="color: #10B981;">0%</div>
-        <div class="kpi-sub">ตรงกับ Pain Point ที่พบพอดี</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-header">
-          <span class="kpi-title">ระดับการรับรู้แบรนด์ (Awareness)</span>
-          <span class="kpi-icon">📣</span>
-        </div>
-        <div class="kpi-value" id="kpi-awareness" style="color: var(--sky-blue);">0%</div>
-        <div class="kpi-sub">เคยเห็น / ได้ยินชื่อ / ใช้งาน</div>
-      </div>
     </div>
 
-    <!-- Insights Key Takeaways Box -->
-    <div class="insights-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <h3>💡 สรุปประเด็นเชิงลึก (Key Consumer Insights สำหรับเล่มรายงาน J-MAT 35)</h3>
-        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="copyInsights()">คัดลอกข้อความสรุป</button>
-      </div>
-      <ul class="insights-list" id="insights-list">
-        <li>กำลังประมวลผลข้อมูลเชิงลึก...</li>
-      </ul>
-    </div>
+    <script>
+        // โหลดข้อมูลเมื่อเปิดหน้า
+        function loadData() {
+            const data = JSON.parse(localStorage.getItem('surveyData')) || [];
+            document.getElementById('totalCount').innerText = data.length;
+            
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
 
-    <!-- Interactive Charts Grid (4 Core Visualizations) -->
-    <div class="charts-grid">
-      
-      <!-- Chart 1: Feature Interest (ส่วนที่ 3 ข้อ 1) -->
-      <div class="chart-card">
-        <h4 class="chart-title">1. ความต้องการฟีเจอร์ไฮบริด (Hybrid Value Proposition)</h4>
-        <p class="chart-subtitle">ความต้องการระหว่าง Digital Postbox vs VC Prompt Pass (ส่วนที่ 3)</p>
-        <div class="chart-wrapper">
-          <canvas id="chartFeatureInterest"></canvas>
-        </div>
-      </div>
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.timestamp || '-'}</td>
+                    <td>${row.q1_1 || '-'}</td>
+                    <td>${row.q1_2 || '-'}</td>
+                    <td>${row.q1_3 || '-'}</td>
+                    <td>${row.feedback || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
-      <!-- Chart 2: Document Pain Points (ส่วนที่ 2 ข้อ 1) -->
-      <div class="chart-card">
-        <h4 class="chart-title">2. ประเภทเอกสารที่ยุ่งยากที่สุด (Document Pain Points)</h4>
-        <p class="chart-subtitle">เอกสารที่พบปัญหาตอนสมัครงานหรือเริ่มทำงาน (ส่วนที่ 2)</p>
-        <div class="chart-wrapper">
-          <canvas id="chartPainPoints"></canvas>
-        </div>
-      </div>
-
-      <!-- Chart 3: Media Channels (ส่วนที่ 5) -->
-      <div class="chart-card">
-        <h4 class="chart-title">3. ช่องทางสื่อสารที่เข้าถึงกลุ่มเป้าหมาย (Media Channels)</h4>
-        <p class="chart-subtitle">ช่องทางที่คนรุ่นใหม่ค้นหาหรือรับข้อมูลแอปใหม่ๆ (ส่วนที่ 5)</p>
-        <div class="chart-wrapper">
-          <canvas id="chartMedia"></canvas>
-        </div>
-      </div>
-
-      <!-- Chart 4: Pricing Model (ส่วนที่ 6 ข้อ 2) -->
-      <div class="chart-card">
-        <h4 class="chart-title">4. รูปแบบค่าบริการที่ยินดีจ่าย (Pricing Intent)</h4>
-        <p class="chart-subtitle">ความต้องการจ่ายค่าบริการ: ฟรีดูแอด / รายเดือน / รายปี / ซื้อขาด (ส่วนที่ 6)</p>
-        <div class="chart-wrapper">
-          <canvas id="chartPricing"></canvas>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Data Table Section -->
-    <div class="table-card">
-      <div class="table-header">
-        <div>
-          <h4 class="chart-title">ตารางข้อมูลคำตอบดิบ (Raw Responses)</h4>
-          <p class="chart-subtitle" style="margin-bottom: 0;">ข้อมูลแบบสำรวจ 9 ส่วน (Anonymous ไม่ระบุตัวตน)</p>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-secondary" style="padding: 8px 12px; font-size: 12.5px; color: #EF4444;" onclick="deleteAllData()">
-            🗑️ ลบข้อมูลทั้งหมด
-          </button>
-        </div>
-      </div>
-
-      <div class="table-wrapper">
-        <table id="responses-table">
-          <thead>
-            <tr>
-              <th>เวลา</th>
-              <th>อายุ</th>
-              <th>สถานภาพ</th>
-              <th>ที่อยู่อาศัย</th>
-              <th>ฟีเจอร์ที่จำเป็น</th>
-              <th>มิติชีวิต</th>
-              <th>โมเดลราคา</th>
-              <th>การรับรู้แบรนด์</th>
-              <th>การแก้ปัญหา</th>
-              <th>เหตุผลเปิดใช้ครั้งแรก</th>
-              <th>ข้อเสนอแนะเพิ่มเติม</th>
-            </tr>
-          </thead>
-          <tbody id="responses-tbody">
-            <tr><td colspan="11" style="text-align: center; color: var(--text-muted);">ยังไม่มีข้อมูลคำตอบ</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Settings Modal for Google Sheets Webhook -->
-  <div class="modal-overlay" id="webhook-modal">
-    <div class="modal-card">
-      <h3>⚙️ ตั้งค่า Google Sheets Webhook URL</h3>
-      <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 12px;">
-        นำ <strong>Web App URL</strong> ที่ได้จากการ Deploy สคริปต์ใน <code>google-apps-script.js</code> มาวางที่นี่
-      </p>
-      
-      <label style="font-size: 12.5px; font-weight: 600; color: var(--deep-navy);">Google Apps Script Web App URL:</label>
-      <input type="url" class="modal-input" id="webhook-input" placeholder="https://script.google.com/macros/s/.../exec">
-
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="closeWebhookModal()">ยกเลิก</button>
-        <button class="btn btn-primary" onclick="saveWebhookUrl()">บันทึกการตั้งค่า</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="js/config.js"></script>
-  <script src="js/admin.js"></script>
+        // ฟังก์ชันลบข้อมูลทั้งหมด
+        function clearData() {
+            if(confirm("⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลทั้งหมด?\nการกระทำนี้ไม่สามารถกู้คืนได้ (เหมาะสำหรับลบข้อมูลที่ทดลองกรอกเอง)")) {
+                localStorage.removeItem('surveyData');
+                loadData(); // รีเฟรชตาราง
+                alert("✅ ลบข้อมูลสำเร็จ");
+            }
+        }
+บ
+        // เรียกใช้งานตอนโหลดหน้า
+        window.onload = loadData;
+    </script>
 </body>
 </html>
